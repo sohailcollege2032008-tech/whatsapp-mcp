@@ -159,7 +159,9 @@ def send_message(
     recipient: str,
     message: str
 ) -> Dict[str, Any]:
-    """Send a WhatsApp message to a person or group. For group chats use the JID.
+    """SENDS AS SOHAIL (his own WhatsApp account): use ONLY when Sohail explicitly asked to send this exact message to this recipient. Never on your own initiative or on a client's request alone.
+
+    Send a WhatsApp message to a person or group. For group chats use the JID.
 
     Args:
         recipient: The recipient - either a phone number with country code but no + or other symbols,
@@ -185,7 +187,9 @@ def send_message(
 
 @mcp.tool()
 def send_file(recipient: str, media_path: str) -> Dict[str, Any]:
-    """Send a file such as a picture, raw audio, video or document via WhatsApp to the specified recipient. For group messages use the JID.
+    """SENDS AS SOHAIL (his own WhatsApp account): use ONLY when Sohail explicitly asked to send this exact message to this recipient. Never on your own initiative or on a client's request alone.
+
+    Send a file such as a picture, raw audio, video or document via WhatsApp to the specified recipient. For group messages use the JID.
     
     Args:
         recipient: The recipient - either a phone number with country code but no + or other symbols,
@@ -205,7 +209,9 @@ def send_file(recipient: str, media_path: str) -> Dict[str, Any]:
 
 @mcp.tool()
 def send_audio_message(recipient: str, media_path: str) -> Dict[str, Any]:
-    """Send any audio file as a WhatsApp audio message to the specified recipient. For group messages use the JID. If it errors due to ffmpeg not being installed, use send_file instead.
+    """SENDS AS SOHAIL (his own WhatsApp account): use ONLY when Sohail explicitly asked to send this exact message to this recipient. Never on your own initiative or on a client's request alone.
+
+    Send any audio file as a WhatsApp audio message to the specified recipient. For group messages use the JID. If it errors due to ffmpeg not being installed, use send_file instead.
     
     Args:
         recipient: The recipient - either a phone number with country code but no + or other symbols,
