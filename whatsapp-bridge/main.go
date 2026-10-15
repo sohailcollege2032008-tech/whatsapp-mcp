@@ -775,7 +775,7 @@ func startRESTServer(client *whatsmeow.Client, messageStore *MessageStore, port 
 	})
 
 	// Start the server
-	serverAddr := fmt.Sprintf(":%d", port)
+	serverAddr := fmt.Sprintf("127.0.0.1:%d", port) // loopback only: this API sends messages as the account owner
 	fmt.Printf("Starting REST API server on %s...\n", serverAddr)
 
 	// Run server in a goroutine so it doesn't block
@@ -871,6 +871,7 @@ func main() {
 			if evt.Event == "code" {
 				fmt.Println("\nScan this QR code with your WhatsApp app:")
 				qrterminal.GenerateHalfBlock(evt.Code, qrterminal.L, os.Stdout)
+				_ = os.WriteFile("store/qr.txt", []byte(evt.Code), 0600) // rendered to a PNG for pairing from a phone
 			} else if evt.Event == "success" {
 				connected <- true
 				break
@@ -906,7 +907,11 @@ func main() {
 	fmt.Println("\n✓ Connected to WhatsApp! Type 'help' for commands.")
 
 	// Start REST API server
-	startRESTServer(client, messageStore, 8080)
+	port := 8090
+	if v := os.Getenv("WA_BRIDGE_PORT"); v != "" {
+		fmt.Sscanf(v, "%d", &port)
+	}
+	startRESTServer(client, messageStore, port)
 
 	// Create a channel to keep the main goroutine alive
 	exitChan := make(chan os.Signal, 1)
