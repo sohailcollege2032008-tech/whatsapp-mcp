@@ -14,7 +14,39 @@ Here's an example of what you can do when it's connected to Claude.
 
 > *Caution:* as with many MCP servers, the WhatsApp MCP is subject to [the lethal trifecta](https://simonwillison.net/2025/Jun/16/the-lethal-trifecta/). This means that project injection could lead to private data exfiltration.
 
-## Installation
+## This fork: updated and working (Oct 2026)
+
+The upstream repo no longer builds against current whatsmeow, and media downloads fail. This fork fixes that:
+
+- **Builds with the latest whatsmeow** (all the new `context.Context` arguments).
+- **Media download works:** upstream rebuilt the CDN path without the `oh`/`oe` auth params, so every image, voice note, video and document download failed with HTTP 403. History-sync messages that have only a `DirectPath` work too.
+- **Pair by phone number** (no camera needed): `WA_PAIR_PHONE=<number>` prints an 8-character code.
+- **Safer defaults:** the REST API listens on `127.0.0.1` only. The port is set with `WA_BRIDGE_PORT` (default 8090). `store/` (keys and messages) is gitignored.
+- **The send tools say clearly** that they send as you, so agents only send when you explicitly ask.
+- **One-command setup** in `setup/`: build, an optional systemd service, and pairing.
+
+### Quick start (Linux server or Mac)
+
+```bash
+git clone https://github.com/sohailcollege2032008-tech/whatsapp-mcp && cd whatsapp-mcp
+./setup/install.sh --systemd          # needs go, gcc, uv; prints the MCP config at the end
+./setup/pair.sh --phone 2010XXXXXXXX  # or ./setup/pair.sh to get a QR in the terminal
+./setup/pair.sh status
+```
+
+To skip systemd (Mac, or just trying it), run `./setup/install.sh` and then start the bridge yourself: `cd whatsapp-bridge && ./whatsapp-bridge`. The QR shows in the terminal. If you prefer a code, run `WA_PAIR_PHONE=2010XXXXXXXX ./whatsapp-bridge` instead.
+
+Add the printed `whatsapp` block to your MCP client (Claude Code, Claude Desktop, Cursor, OpenCode and others). To link from your phone: WhatsApp → Linked devices → Link a device → "Link with phone number instead", then type the code.
+
+### بالعربي باختصار
+
+- **التثبيت:** `./setup/install.sh --systemd`، وبعدها `./setup/pair.sh --phone 2010XXXXXXXX`، واكتب الكود في واتساب ← الأجهزة المرتبطة ← ربط جهاز ← «الربط برقم الهاتف».
+- **فين الرسايل والملفات:** على جهازك بس في `whatsapp-bridge/store/`. **ملف `whatsapp.db` يساوي دخول على حسابك، متشاركوش.**
+- **قطع الوصول:** امسح الجهاز من «الأجهزة المرتبطة» على الموبايل.
+- **الموبايل:** لازم يفتح نت مرة كل حوالي 14 يوم.
+- **تحذير:** المكتبة مش رسمية. القراءة آمنة غالباً، بس الإرسال الكتير أو الأوتوماتيك ممكن يعرّض الرقم للحظر.
+
+## Installation (original instructions)
 
 ### Prerequisites
 

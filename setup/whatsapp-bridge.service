@@ -1,0 +1,16 @@
+[Unit]
+Description=WhatsApp bridge (whatsmeow linked device + local REST API)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=@USER@
+WorkingDirectory=@DIR@
+Environment=WA_BRIDGE_PORT=@PORT@
+ExecStart=@DIR@/whatsapp-bridge
+Restart=always
+RestartSec=10
+MemoryMax=400M
+
+[Install]
+WantedBy=multi-user.target
