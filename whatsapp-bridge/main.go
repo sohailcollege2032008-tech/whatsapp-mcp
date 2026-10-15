@@ -866,6 +866,18 @@ func main() {
 			return
 		}
 
+		// Phone-only linking: WA_PAIR_PHONE=<intl number, digits only> → 8-char code in store/pair.txt
+		// (WhatsApp → Linked devices → Link with phone number instead).
+		if phone := os.Getenv("WA_PAIR_PHONE"); phone != "" {
+			code, perr := client.PairPhone(context.Background(), phone, true, whatsmeow.PairClientChrome, "Chrome (Linux)")
+			if perr != nil {
+				logger.Errorf("PairPhone failed: %v", perr)
+			} else {
+				fmt.Println("\nPairing code:", code)
+				_ = os.WriteFile("store/pair.txt", []byte(code), 0600)
+			}
+		}
+
 		// Print QR code for pairing with phone
 		for evt := range qrChan {
 			if evt.Event == "code" {
