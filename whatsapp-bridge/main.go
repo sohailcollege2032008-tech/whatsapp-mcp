@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"mime"
 	"net/http"
 	neturl "net/url"
 	"os"
@@ -203,6 +204,37 @@ type SendMessageRequest struct {
 	MediaPath string `json:"media_path,omitempty"`
 }
 
+func buildDocumentMessage(mediaPath, caption string, upload whatsmeow.UploadResponse) *waProto.DocumentMessage {
+	fileName := filepath.Base(mediaPath)
+	extension := strings.ToLower(filepath.Ext(fileName))
+	var mimeType string
+	switch extension {
+	case ".pdf":
+		mimeType = "application/pdf"
+	case ".docx":
+		mimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+	case ".xlsx":
+		mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+	default:
+		mimeType = mime.TypeByExtension(extension)
+		if mimeType == "" {
+			mimeType = "application/octet-stream"
+		}
+	}
+	return &waProto.DocumentMessage{
+		Title:         proto.String(fileName),
+		FileName:      proto.String(fileName),
+		Caption:       proto.String(caption),
+		Mimetype:      proto.String(mimeType),
+		URL:           &upload.URL,
+		DirectPath:    &upload.DirectPath,
+		MediaKey:      upload.MediaKey,
+		FileEncSHA256: upload.FileEncSHA256,
+		FileSHA256:    upload.FileSHA256,
+		FileLength:    &upload.FileLength,
+	}
+}
+
 // Function to send a WhatsApp message
 func sendWhatsAppMessage(client *whatsmeow.Client, recipient string, message string, mediaPath string) (bool, string) {
 	if !client.IsConnected() {
@@ -280,7 +312,6 @@ func sendWhatsAppMessage(client *whatsmeow.Client, recipient string, message str
 		// Document types (for any other file type)
 		default:
 			mediaType = whatsmeow.MediaDocument
-			mimeType = "application/octet-stream"
 		}
 
 		// Upload media to WhatsApp servers
@@ -346,17 +377,7 @@ func sendWhatsAppMessage(client *whatsmeow.Client, recipient string, message str
 				FileLength:    &resp.FileLength,
 			}
 		case whatsmeow.MediaDocument:
-			msg.DocumentMessage = &waProto.DocumentMessage{
-				Title:         proto.String(mediaPath[strings.LastIndex(mediaPath, "/")+1:]),
-				Caption:       proto.String(message),
-				Mimetype:      proto.String(mimeType),
-				URL:           &resp.URL,
-				DirectPath:    &resp.DirectPath,
-				MediaKey:      resp.MediaKey,
-				FileEncSHA256: resp.FileEncSHA256,
-				FileSHA256:    resp.FileSHA256,
-				FileLength:    &resp.FileLength,
-			}
+			msg.DocumentMessage = buildDocumentMessage(mediaPath, message, resp)
 		}
 	} else {
 		msg.Conversation = proto.String(message)
