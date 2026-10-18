@@ -1,0 +1,24 @@
+[Unit]
+Description=Private WhatsApp MCP HTTP transport
+After=network.target whatsapp-bridge.service
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/workspace/whatsapp-mcp/whatsapp-mcp-server
+Environment=WHATSAPP_MCP_TOKEN_FILE=/home/ubuntu/.config/whatsapp-mcp/http-token
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/home/ubuntu/.local/share/whatsapp-mcp-http/.venv/bin/python http_server.py
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/ubuntu/workspace/whatsapp-mcp/whatsapp-bridge/store
+MemoryMax=400M
+CPUQuota=50%
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

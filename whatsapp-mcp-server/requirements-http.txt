@@ -1,0 +1,3 @@
+# Separate environment: do not upgrade the existing stdio server's dependencies.
+fastmcp==4.0.11
+requests==2.32.5
