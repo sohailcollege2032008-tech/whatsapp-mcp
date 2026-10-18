@@ -26,6 +26,7 @@ All sending is mocked. Live acceptance uses public HTTPS initialization,
 tool enumeration, one read, and negative authentication checks. It does not
 send real messages or download personal media.
 
-This Contabo service is registered as a seven-day trial under the server
-policy. A permanent deployment belongs on med-vps; the existing linked-device
-session must not be copied or moved as part of that migration without approval.
+Sohail explicitly designated this personal MCP companion as a permanent service
+on his Sohail Remote / Contabo server, alongside Telegram and NotebookLM. It is
+not an external client service or a trial, has no scheduled expiry, and does not
+require migration to med-vps. The existing linked-device session stays in place.
