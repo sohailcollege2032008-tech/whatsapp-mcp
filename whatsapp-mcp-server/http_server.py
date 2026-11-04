@@ -7,9 +7,11 @@ import sqlite3
 from pathlib import Path
 
 from fastmcp import FastMCP
+from fastmcp.server.dependencies import get_http_request
 import whatsapp
 
 MEDIA_ROOT = Path(whatsapp.MESSAGES_DB_PATH).resolve().parent
+LOCAL_ROOTS = (Path.home() / "workspace", Path("/tmp"))
 READ_TOOLS = (
     "search_contacts", "list_messages", "list_chats", "get_chat",
     "get_direct_chat_by_contact", "get_contact_chats", "get_last_interaction",
@@ -17,9 +19,20 @@ READ_TOOLS = (
 )
 
 
+def local_agent() -> bool:
+    """True for agents on this box hitting loopback; Caddy always adds X-Forwarded-For."""
+    try:
+        headers = get_http_request().headers
+    except RuntimeError:
+        return False
+    return "x-forwarded-for" not in headers and headers.get("host", "").split(":")[0] == "127.0.0.1"
+
+
 def media_file(media_path: str) -> str:
     """Remote callers may send downloaded media, never arbitrary server files."""
     path = Path(media_path).resolve()
+    if local_agent() and path.is_file() and any(path.is_relative_to(root) for root in LOCAL_ROOTS):
+        return str(path)
     try:
         relative = path.relative_to(MEDIA_ROOT)
     except ValueError:
@@ -94,7 +107,7 @@ def main() -> None:
     build_server().run(
         transport="http", host="127.0.0.1", port=9450,
         path=f"/whatsapp/{token}", stateless_http=True, json_response=True,
-        allowed_hosts=["tgu.sohail-remote.top"],
+        allowed_hosts=["tgu.sohail-remote.top", "127.0.0.1:*"],
         show_banner=False, log_level="warning",
         uvicorn_config={"access_log": False},
     )

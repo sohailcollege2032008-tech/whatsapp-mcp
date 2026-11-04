@@ -9,6 +9,30 @@ from starlette.testclient import TestClient
 import http_server
 
 
+class LocalAgentScopeTest(unittest.TestCase):
+    def setUp(self):
+        self.dir = tempfile.TemporaryDirectory(dir="/tmp")
+        self.file = Path(self.dir.name) / "report.pdf"
+        self.file.write_text("x")
+        self.addCleanup(self.dir.cleanup)
+
+    def request(self, **headers):
+        return patch.object(http_server, "get_http_request", return_value=type("R", (), {"headers": headers})())
+
+    def test_loopback_agent_may_send_workspace_files(self):
+        with self.request(host="127.0.0.1:9450"):
+            self.assertEqual(http_server.media_file(str(self.file)), str(self.file.resolve()))
+
+    def test_loopback_agent_still_cannot_send_system_files(self):
+        with self.request(host="127.0.0.1:9450"), self.assertRaises(ValueError):
+            http_server.media_file("/etc/passwd")
+
+    def test_proxied_request_stays_restricted(self):
+        for headers in ({"host": "127.0.0.1:9450", "x-forwarded-for": "1.2.3.4"}, {"host": "tgu.sohail-remote.top"}):
+            with self.request(**headers), self.assertRaises(ValueError):
+                http_server.media_file(str(self.file))
+
+
 class HttpTransportTest(unittest.TestCase):
     def test_private_transport(self):
         app = http_server.build_server().http_app(
