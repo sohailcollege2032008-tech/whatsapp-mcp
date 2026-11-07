@@ -422,6 +422,9 @@ func (rs *RichStore) phoneFor(j, alt types.JID) types.JID {
 
 func (rs *RichStore) ensureChat(chat types.JID, t time.Time, sender string) {
 	chatJID := chat.String()
+	if chat.Server != types.GroupServer {
+		sender = chat.User // a DM is named after the other person, never after our own number
+	}
 	name := GetChatName(rs.client, rs.ms, chat, chatJID, nil, sender, rs.log)
 	var last sql.NullTime
 	rs.ms.db.QueryRow("SELECT last_message_time FROM chats WHERE jid = ?", chatJID).Scan(&last)

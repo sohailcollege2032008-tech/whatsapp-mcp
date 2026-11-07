@@ -124,6 +124,13 @@ def _reactions(c, chat: str, mid: str, names: _Names) -> List[dict]:
     return [{"emoji": r[1], "by": names.label(r[0]), "at": r[2]} for r in rows]
 
 
+def _chat_name(names: "_Names", jid: str, stored: Optional[str]) -> Optional[str]:
+    """DM chats stored before the upgrade are sometimes named with a bare number; show the person instead."""
+    if jid.endswith("@g.us") or (stored and not stored.isdigit()):
+        return stored
+    return names.label(jid)
+
+
 def _msg_dict(c, r: sqlite3.Row, names: _Names, full: bool = False) -> dict:
     if r["is_from_me"]:
         sender = "Me"
@@ -132,7 +139,7 @@ def _msg_dict(c, r: sqlite3.Row, names: _Names, full: bool = False) -> dict:
     else:
         sender = names.label(r["sender_jid"] or r["sender"], r["push_name"])
     d = {
-        "id": r["id"], "chat_jid": r["chat_jid"], "chat_name": r["chat_name"], "timestamp": r["timestamp"],
+        "id": r["id"], "chat_jid": r["chat_jid"], "chat_name": _chat_name(names, r["chat_jid"], r["chat_name"]), "timestamp": r["timestamp"],
         "from": sender, "is_from_me": bool(r["is_from_me"]), "type": r["msg_type"] or r["media_type"] or "text",
         "content": r["content"],
     }
@@ -351,9 +358,9 @@ def list_chats(
         names = _Names(c)
         for r in c.execute(sql, params).fetchall():
             jid = r["jid"]
-            d = {"jid": jid, "name": r["name"], "is_group": jid.endswith("@g.us"), "last_active": r["last_message_time"],
+            d = {"jid": jid, "name": _chat_name(names, jid, r["name"]), "is_group": jid.endswith("@g.us"), "last_active": r["last_message_time"],
                  "unread": r["unread_count"], "archived": bool(r["archived"]), "pinned": bool(r["pinned"])}
-            if r["muted_until"]:
+            if r["muted_until"] and (r["muted_until"] < 0 or r["muted_until"] > datetime.now().timestamp()):
                 d["muted"] = "forever" if r["muted_until"] < 0 else datetime.fromtimestamp(r["muted_until"]).isoformat(" ")
             if not d["is_group"] and jid.endswith("@lid"):
                 d.update({k: v for k, v in names.who(jid).items() if k in ("phone",) and v})
