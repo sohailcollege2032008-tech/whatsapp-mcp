@@ -744,8 +744,14 @@ func (a *API) groupOut(ctx context.Context, g *types.GroupInfo, withNames bool) 
 				ps[i]["is_me"] = true
 				out["i_am_admin"] = p.IsAdmin
 			}
+			pn := p.PhoneNumber
+			if pn.IsEmpty() {
+				if pn = a.rs.phoneFor(p.JID, types.EmptyJID); !pn.IsEmpty() {
+					ps[i]["phone"] = pn.User
+				}
+			}
 			if withNames {
-				for _, j := range []types.JID{p.PhoneNumber, p.JID} {
+				for _, j := range []types.JID{pn, p.JID} {
 					if c, err := a.cli.Store.Contacts.GetContact(ctx, j); err == nil && c.Found {
 						if n := firstNonEmpty(c.FullName, firstNonEmpty(c.PushName, c.BusinessName)); n != "" {
 							ps[i]["name"] = n

@@ -37,6 +37,9 @@ func TestParseRichTypes(t *testing.T) {
 			t.Errorf("document filename not sanitized: %q", r.Filename)
 		}
 	}
+	if _, ok := ParseRich(&waE2E.Message{ProtocolMessage: &waE2E.ProtocolMessage{}}, "x"); ok {
+		t.Error("protocol messages must not be stored")
+	}
 	if _, ok := ParseRich(&waE2E.Message{ReactionMessage: &waE2E.ReactionMessage{}}, "x"); ok {
 		t.Error("reactions must not be stored as messages")
 	}

@@ -446,6 +446,9 @@ func (rs *RichStore) Handle(evt *events.Message, history bool) {
 		senderJID = rs.client.Store.ID.ToNonAD()
 	}
 	m := evt.Message
+	if inner := m.GetEditedMessage().GetMessage(); inner != nil {
+		m = inner // our own sent edits arrive wrapped
+	}
 
 	// Side effects that modify other messages.
 	if r := m.GetReactionMessage(); r != nil {
