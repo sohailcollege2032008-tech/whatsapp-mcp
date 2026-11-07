@@ -53,12 +53,15 @@ class HttpTransportTest(unittest.TestCase):
             self.assertEqual(response.status_code, 200)
             self.assertIn("serverInfo", response.json()["result"])
             tools = rpc("tools/list").json()["result"]["tools"]
-            self.assertEqual({t["name"] for t in tools}, set(http_server.READ_TOOLS) | {
-                "send_message", "send_file", "send_audio_message", "download_media",
-            })
+            expected = {f.__name__ for f in http_server.wa_tools.READ + http_server.wa_tools.WRITE + http_server.wa_tools.DESTRUCTIVE}
+            self.assertEqual({t["name"] for t in tools}, expected)
+            self.assertGreater(len(expected), 45)
+            by_name = {t["name"]: t for t in tools}
+            self.assertTrue(by_name["list_messages"]["annotations"]["readOnlyHint"])
+            self.assertTrue(by_name["create_group"]["annotations"]["destructiveHint"])
             for tool in tools:
                 self.assertIn("inputSchema", tool)
-            with patch.object(http_server.whatsapp, "send_file") as sender:
+            with patch.object(http_server.wa_tools, "_api") as sender:
                 result = rpc("tools/call", {
                     "name": "send_file", "arguments": {
                         "recipient": "test", "media_path": "/etc/passwd",

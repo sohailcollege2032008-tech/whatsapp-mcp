@@ -1,4 +1,4 @@
-"""Private remote transport; the existing stdio server stays unchanged."""
+"""Private HTTP transport for the WhatsApp MCP; same tools as main.py with file-path guards."""
 from __future__ import annotations
 
 import os
@@ -9,14 +9,11 @@ from pathlib import Path
 from fastmcp import FastMCP
 from fastmcp.server.dependencies import get_http_request
 import whatsapp
+import wa_tools
+from mcp.types import ToolAnnotations
 
 MEDIA_ROOT = Path(whatsapp.MESSAGES_DB_PATH).resolve().parent
 LOCAL_ROOTS = (Path.home() / "workspace", Path("/tmp"))
-READ_TOOLS = (
-    "search_contacts", "list_messages", "list_chats", "get_chat",
-    "get_direct_chat_by_contact", "get_contact_chats", "get_last_interaction",
-    "get_message_context",
-)
 
 
 def local_agent() -> bool:
@@ -44,41 +41,10 @@ def media_file(media_path: str) -> str:
 
 def build_server() -> FastMCP:
     server = FastMCP("WhatsApp personal account")
-    for name in READ_TOOLS:
-        server.tool(getattr(whatsapp, name), annotations={"readOnlyHint": True})
-
-    @server.tool(annotations={"readOnlyHint": False, "destructiveHint": True})
-    def send_message(recipient: str, message: str) -> dict:
-        """Send as the account owner ONLY on their explicit request for this recipient and message."""
-        success, status = whatsapp.send_message(recipient, message)
-        return {"success": success, "message": status}
-
-    @server.tool(annotations={"readOnlyHint": False, "destructiveHint": True})
-    def send_file(recipient: str, media_path: str) -> dict:
-        """Send downloaded WhatsApp media ONLY on the owner's explicit request for this recipient and file."""
-        success, status = whatsapp.send_file(recipient, media_file(media_path))
-        return {"success": success, "message": status}
-
-    @server.tool(annotations={"readOnlyHint": False, "destructiveHint": True})
-    def send_audio_message(recipient: str, media_path: str) -> dict:
-        """Send downloaded .ogg WhatsApp audio ONLY on the owner's explicit request. Use send_file for other formats."""
-        path = media_file(media_path)
-        if not path.endswith(".ogg"):
-            raise ValueError("Remote voice messages require .ogg; use send_file for other formats")
-        success, status = whatsapp.send_audio_message(recipient, path)
-        return {"success": success, "message": status}
-
-    @server.tool(annotations={"readOnlyHint": False})
-    def download_media(message_id: str, chat_jid: str) -> dict:
-        """Download media from a WhatsApp message and return its server media path."""
-        expected = download_target(message_id, chat_jid)
-        path = whatsapp.download_media(message_id, chat_jid)
-        if path:
-            if Path(path).resolve() != expected:
-                raise ValueError("Unexpected media download path")
-            return {"success": True, "file_path": path}
-        return {"success": False, "message": "Media download failed"}
-
+    wa_tools.PATH_GUARD = media_file
+    wa_tools.DOWNLOAD_GUARD = download_target
+    wa_tools.register(server, lambda kind: ToolAnnotations(
+        readOnlyHint=kind == "read", destructiveHint=kind == "destructive", openWorldHint=True))
     return server
 
 
